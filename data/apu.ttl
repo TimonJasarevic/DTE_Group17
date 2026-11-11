@@ -1,0 +1,118 @@
+@prefix metro: <https://example.org/metropt/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# Formal schema: physical assets and observed dataset fields.
+metro:MetroPTOntology a owl:Ontology ;
+    rdfs:comment "Structure and sensor-field mapping for MetroPT APU data. Based on Veloso et al. (2022)." .
+
+metro:PhysicalAsset a owl:Class .
+metro:Train a owl:Class ; rdfs:subClassOf metro:PhysicalAsset .
+metro:APU a owl:Class ; rdfs:subClassOf metro:PhysicalAsset .
+metro:Component a owl:Class ; rdfs:subClassOf metro:PhysicalAsset .
+metro:ObservableField a owl:Class .
+metro:AnalogSignal a owl:Class ; rdfs:subClassOf metro:ObservableField .
+metro:DigitalSignal a owl:Class ; rdfs:subClassOf metro:ObservableField .
+metro:GPSField a owl:Class ; rdfs:subClassOf metro:ObservableField .
+
+metro:hasPart a owl:ObjectProperty ;
+    rdfs:domain metro:PhysicalAsset ; rdfs:range metro:PhysicalAsset .
+metro:hasField a owl:ObjectProperty ;
+    rdfs:domain metro:PhysicalAsset ; rdfs:range metro:ObservableField .
+metro:csvColumn a owl:DatatypeProperty ;
+    rdfs:domain metro:ObservableField ; rdfs:range xsd:string .
+metro:unit a owl:DatatypeProperty ;
+    rdfs:domain metro:ObservableField ; rdfs:range xsd:string .
+
+# Physical system: the GPS receiver belongs to the train, not the APU.
+metro:Train_1 a metro:Train ;
+    metro:hasPart metro:APU_1, metro:GPSReceiver_1 .
+
+metro:APU_1 a metro:APU ;
+    metro:hasPart metro:Compressor_1, metro:AirDryer_1,
+        metro:PneumaticPanel_1, metro:Reservoirs_1 ;
+    metro:hasField metro:H14, metro:LPS, metro:Pressure_switch .
+
+metro:Compressor_1 a metro:Component ;
+    metro:hasField metro:TP24, metro:Oil_Temperature, metro:Motor_Current,
+        metro:COMP, metro:DV_electric, metro:MPG, metro:Oil_Level .
+
+metro:AirDryer_1 a metro:Component ;
+    metro:hasField metro:DV_pressure, metro:TOWERS .
+
+metro:PneumaticPanel_1 a metro:Component ;
+    metro:hasField metro:TP34, metro:Flowmeter, metro:Caudal_impulses .
+
+metro:Reservoirs_1 a metro:Component ;
+    metro:hasField metro:Reservoirs .
+
+metro:GPSReceiver_1 a metro:Component ;
+    metro:hasField metro:gpsLong, metro:gpsLat, metro:gpsSpeed, metro:gpsQuality .
+
+# Eight analog signals, exactly as named in the source CSV.
+metro:TP24 a metro:AnalogSignal ;
+    metro:csvColumn "TP24" ; metro:unit "bar" ;
+    rdfs:comment "Pressure on the compressor." .
+metro:TP34 a metro:AnalogSignal ;
+    metro:csvColumn "TP34" ; metro:unit "bar" ;
+    rdfs:comment "Pressure generated at the pneumatic panel." .
+metro:H14 a metro:AnalogSignal ;
+    metro:csvColumn "H14" ; metro:unit "bar" ;
+    rdfs:comment "Pressure-related reading associated with a valve activated above operating pressure of 10.2 bar. Kept at APU level because the paper does not specify a unique component mapping." .
+metro:DV_pressure a metro:AnalogSignal ;
+    metro:csvColumn "DV_pressure" ; metro:unit "bar" ;
+    rdfs:comment "Pressure from the pressure drop when air-dryer towers discharge water; zero indicates compressor working under load." .
+metro:Reservoirs a metro:AnalogSignal ;
+    metro:csvColumn "Reservoirs" ; metro:unit "bar" ;
+    rdfs:comment "Pressure inside the train air tanks." .
+metro:Oil_Temperature a metro:AnalogSignal ;
+    metro:csvColumn "Oil_Temperature" ; metro:unit "degC" ;
+    rdfs:comment "Temperature of compressor oil." .
+metro:Flowmeter a metro:AnalogSignal ;
+    metro:csvColumn "Flowmeter" ; metro:unit "m3/h" ;
+    rdfs:comment "Airflow measured at the pneumatic control panel." .
+metro:Motor_Current a metro:AnalogSignal ;
+    metro:csvColumn "Motor_Current" ; metro:unit "A" ;
+    rdfs:comment "Compressor motor current; approximately 0 A off, 4 A unloaded, 7 A under load." .
+
+# Eight binary digital signals, taking values 0 or 1 in MetroPT.
+metro:COMP a metro:DigitalSignal ;
+    metro:csvColumn "COMP" ;
+    rdfs:comment "Signal for compressor intake valve; active when no air is admitted (off or unloaded)." .
+metro:DV_electric a metro:DigitalSignal ;
+    metro:csvColumn "DV_electric" ;
+    rdfs:comment "Compressor outlet-valve command; active when compressor is under load." .
+metro:TOWERS a metro:DigitalSignal ;
+    metro:csvColumn "TOWERS" ;
+    rdfs:comment "Air-dryer tower selection; 0 tower one working, 1 tower two working." .
+metro:MPG a metro:DigitalSignal ;
+    metro:csvColumn "MPG" ;
+    rdfs:comment "Compressor intake-valve command below 8.2 bar; per paper behaves similarly to COMP." .
+metro:LPS a metro:DigitalSignal ;
+    metro:csvColumn "LPS" ;
+    rdfs:comment "Low-pressure signal activated below 7 bar; assigned at APU level." .
+metro:Pressure_switch a metro:DigitalSignal ;
+    metro:csvColumn "Pressure_switch" ;
+    rdfs:comment "Signal activated on detecting pressure at the pilot control valve; assigned at APU level." .
+metro:Oil_Level a metro:DigitalSignal ;
+    metro:csvColumn "Oil_Level" ;
+    rdfs:comment "Active (1) when compressor oil level is below the expected level." .
+metro:Caudal_impulses a metro:DigitalSignal ;
+    metro:csvColumn "Caudal_impulses" ;
+    rdfs:comment "Flowmeter-generated pulses signalling airflow per second." .
+
+# Four GPS fields from the secondary receiver mounted on the train.
+metro:gpsLong a metro:GPSField ;
+    metro:csvColumn "gpsLong" ; metro:unit "degrees" ;
+    rdfs:comment "Longitude; GPS unavailable inside tunnels may be recorded as zero." .
+metro:gpsLat a metro:GPSField ;
+    metro:csvColumn "gpsLat" ; metro:unit "degrees" ;
+    rdfs:comment "Latitude; GPS unavailable inside tunnels may be recorded as zero." .
+metro:gpsSpeed a metro:GPSField ;
+    metro:csvColumn "gpsSpeed" ; metro:unit "km/h" ;
+    rdfs:comment "GPS-derived speed." .
+metro:gpsQuality a metro:GPSField ;
+    metro:csvColumn "gpsQuality" ;
+    rdfs:comment "GPS signal quality." .
